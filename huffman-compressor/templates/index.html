@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Huffman Web Compressor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <div class="bg-orb orb-a"></div>
+  <div class="bg-orb orb-b"></div>
+
+  <main class="page">
+    <section class="hero">
+      <p class="kicker">Huffman Compression</p>
+      <h1>Drop a file.<br>Get it tiny.</h1>
+      <p class="subtitle">Upload any file, compress it into .abiz, or decompress .abiz back to the original format.</p>
+    </section>
+
+    <section class="card">
+      <form id="compressForm" class="uploader" novalidate>
+        <label for="fileInput" class="dropzone" id="dropzone">
+          <input id="fileInput" name="file" type="file" required>
+          <span class="drop-main">Choose or drop file</span>
+          <span class="drop-sub" id="fileName">No file selected</span>
+        </label>
+
+        <div class="actions">
+          <button type="submit" data-mode="compress" class="btn btn-primary">Compress</button>
+          <button type="submit" data-mode="decompress" class="btn btn-secondary">Decompress</button>
+        </div>
+      </form>
+
+      <p id="status" class="status" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
