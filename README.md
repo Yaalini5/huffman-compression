@@ -1,109 +1,80 @@
 # Huffman Compression
-A minimal huffman compression program using C++ language.
 
-## Theory
-Huffman compression is based on huffman coding technique. The huffman coding creates an optimal binary tree that is constructed based on frequency of an item/character in a file.
+This project contains a C++ Huffman compression engine, a command-line interface, and a Flask web application packaged for Docker deployment. The maintained source and web application live in [`huffman-compressor/`](huffman-compressor/); this is the only implementation directory.
 
+## How it works
 
-Let's take an example of a file or string containing data like "AAABBCAAADDFFAAAADCCCDAADDDAAACGAAACACA"
+The compressor counts byte frequencies, builds a binary Huffman tree, and writes the generated codes plus padding metadata into an `.abiz` file. Decompression reads that metadata to rebuild the tree and restore the original bytes.
+
+Huffman coding is most useful for text and other data with repeated byte patterns. Already-compressed formats such as MP3, MP4, PDF, and DOCX may see little or no size reduction.
+
+## Command-line interface
+
+From the application directory, compile the engine with a C++17 compiler:
+
+```bash
+cd huffman-compressor
+g++ huffman-compression.cpp -O2 -std=c++17 -o huffman
 ```
-character     frequency
-    A             20
-    B              2
-    C              7
-    D              7
-    F              2
-    G              1
+
+Compress a file. This creates `<filename>.abiz`:
+
+```bash
+./huffman -c input.txt
 ```
-The above following data will generate a binary tree starting from the characters having the lowest frequency, and construct till we use all the characters as follows:
 
+Decompress an `.abiz` file. This creates `output<original-filename>`:
+
+```bash
+./huffman -dc input.txt.abiz
 ```
-Pass 1:
-(A, 20) (C, 7) (D, 7) (B, 2) (F, 2) (G, 1)                      (A, 20) (C, 7) (D, 7) (**, 3)  (B, 2)   
-                                                   =>                                  /   \
-                                                                                      /     \
-                                                                                   (F, 2) (G, 1)
 
-Pass 2:
-(A, 20) (C, 7) (D, 7) (**, 3)  (B, 2)                           (A, 20) (C, 7) (D, 7) (**, 5)
-                       /   \                                                           /   \
-                      /     \                                                         /     \
-                   (F, 2) (G, 1)                   =>                              (**, 3) (B, 2)
-                                                                                    /   \
-                                                                                   /     \
-                                                                                (F, 2) (G, 1)
+On Windows, run the corresponding `huffman.exe` commands. The web app compiles the same source automatically when needed.
 
-Pass 3:
-(A, 20) (C, 7) (D, 7) (**, 5)                                    (A, 20) (C, 7) (**, 12)
-                       /   \                                                     /   \
-                      /     \                                                   /     \
-                   (**, 3) (B, 2)                  =>                        (D, 7) (**, 5)
-                    /   \                                                            /   \
-                   /     \                                                          /     \
-                 (F, 2) (G, 1)                                                   (**, 3) (B, 2)
-                                                                                  /   \
-                                                                                 /     \
-                                                                              (F, 2) (G, 1)
-                                                                              
-Pass 4:
-(A, 20) (**, 12) (C, 7)                                           (A, 20) (**, 19)
-          /   \                                                             /   \
-         /     \                                                           /     \
-      (D, 7) (**, 5)                                                   (**, 12) (C, 7)
-              /   \                                                      /   \
-             /     \                               =>                   /     \
-          (**, 3) (B, 2)                                            (D, 7) (**, 5)
-           /   \                                                            /   \
-          /     \                                                          /     \
-       (F, 2) (G, 1)                                                    (**, 3) (B, 2)
-                                                                         /   \
-                                                                        /     \
-                                                                     (F, 2) (G, 1)
-                                                                     
-Pass 5 (Final), with huffman code:
+## Flask web interface
 
-Left Branch denoting 0 and right 1
+The browser interface supports both workflows:
 
-(A, 20) (**, 19)                                                         (**, 39)
-          /   \                                                           /   \
-         /     \                                                      (0)/     \(1)
-     (**, 12) (C, 7)                                          [0] <= (A, 20) (**, 19)
-       /   \                                                                 /   \
-      /     \                                                            (0)/     \(1)
-  (D, 7) (**, 5)                                    =>                  (**, 12) (C, 7) => [11]
-          /   \                                                          /   \
-         /     \                                                     (0)/     \(1)
-     (**, 3) (B, 2)                                        [100] <= (D, 7) (**, 5)
-      /   \                                                                 /   \
-     /     \                                                               /     \(1)
-  (F, 2) (G, 1)                                                        (**, 3) (B, 2) => [1011]
-                                                                        /   \
-                                                                    (0)/     \(1)
-                                                         [10100] <= (F, 2) (G, 1) => [10101]
-                                                         
-Final Huffman Codes:
-character     frequency       Huffman Codes       Actual Binary
-    A             20                  0             01000001
-    B              2               1011             01000010
-    C              7                 11             01000011
-    D              7                100             01000100
-    F              2              10100             01000110
-    G              1              10101             01000111
-__________________________________________________________________
-                  39                 75                  312
+- Upload a file to compress it and download the resulting `.abiz` file.
+- Upload an `.abiz` file to decompress it and download the restored file.
+
+Run locally with Python 3.10+ and `g++` installed:
+
+```bash
+cd huffman-compressor
+python -m venv .venv
+# Windows: .venv\Scripts\activate
+# Linux/macOS: source .venv/bin/activate
+pip install -r requirements.txt
+python app.py
 ```
-Hence the resultant data is stored as binary written as '0001011101100010010010100101000000100111111100001001001000001110101000110110*00000*', which has 75 bits
-plus 5 digits appended to round off the remaining bits while storing in the file.
 
+Open <http://localhost:5000>. For a production-style local server, use:
 
-## Executing program
-
+```bash
+gunicorn app:app --bind 0.0.0.0:5000 --workers 1
 ```
-g++ huffman-compression.cpp
-[a.exe | ./a.out] -c|-dc [filename_to_be_compressed] 
-(The order must be same: first: option to compress/decompress and then second: filename)
-```
-The file to be compressed will generate a file with extension '.abiz', which is the compressed version of the original one.
 
-> **Note**: 
-> - Compressing files other than ASCII based text files (e.g., audio (.mp3), video (.mp4), pdfs, document (.doc/.docx), etc.) can have little or no effect on the resulting size.
+## Docker deployment
+
+The Dockerfile installs the C++ build toolchain, compiles the engine, installs the Flask dependencies, and serves the app with Gunicorn.
+
+Build and run from the repository root:
+
+```bash
+docker build -t huffman-compressor:latest ./huffman-compressor
+docker run --rm -p 5000:5000 huffman-compressor:latest
+```
+
+Then open <http://localhost:5000>. The image exposes port `5000`.
+
+## CI/CD
+
+GitHub Actions is configured in [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml). On pushes and pull requests it compiles the C++ engine and verifies a compress/decompress byte-for-byte round trip. On pushes to `main`, it also builds and pushes the Docker image.
+
+Configure these repository secrets before enabling the image push:
+
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN`
+
+The published image name is `${DOCKERHUB_USERNAME}/huffman-compression`.
